@@ -17,15 +17,22 @@
 #include "common.h"
 #include "include.h"
 
-#define BIN_MAX 0x80   //ccd使用
+#define BIN_MAX 0xC8   //ccd使用
+#define CCD_EXPOSURE 60  //ccd曝光时间
 
 uint8 CCD_BUFF[TSL1401_MAX*3][TSL1401_SIZE];  //定义ccd采集数据的数组
 float direction=5;   //小车方向控制量  初始量定义5归中
+uint8 max_d=0;   //ccd每组数据最大差值
+uint8 max = 0;   //ccd中采集最大的数值
+int val=0;     //定义编码器采集数据
 
 /*
 *  线性ccd处理部分函数声明
 */
 void PIT0_IRQHandler();
+//void IRQ_CCD_cal();  //ccd数据处理的中断函数
+void PIT_VAL();
+
 void bin(uint8 *bin,uint8 * img,uint8 * difimg,uint16 len,uint8 maxdif);
 void abs_diff(uint8 *dst,uint8 *src,uint16 len,uint8 * maxval,uint8 * avgval);
 void maxvar(uint8 *buf,uint16 len,uint8  maxval);
@@ -33,14 +40,7 @@ void bin_xk(uint8 *buf, uint16 len);
 void tsl1401ccd_init();
 int ccd_cal();
 
-int zhidaowengding(uint8 a[TSL1401_MAX * 3][TSL1401_SIZE]);   //直到保持稳定1
-int jisuanLdechangdu(uint8 a[TSL1401_MAX * 3][TSL1401_SIZE]); //计算两根标识线之间的距离
-int panduanshifouyouwandao(uint8 a[TSL1401_MAX * 3][TSL1401_SIZE],int L0);  //判断是否又弯道
-int shifouyouliangtiaoxian(uint8 a[TSL1401_MAX * 3][TSL1401_SIZE]);   //是否有两条线
-int zhuanwan(uint8 a[TSL1401_MAX * 3][TSL1401_SIZE]);     //转弯
-int tiaojie(uint8 a[TSL1401_MAX * 3][TSL1401_SIZE]);      //调节函数
 
-void IRQ_CCD_cal();
 
 
 void main(void)
@@ -48,7 +48,7 @@ void main(void)
 /*
 *   下部分是对于所有需要处理的数值的定义及初始化
 */
-    int val=0;     //定义编码器采集数据
+    //int val=0;     //定义编码器采集数据
     uint8 state=0;   //定义状态
     int velocity=0;//小车速度控制 
     int a=0;
@@ -64,7 +64,7 @@ void main(void)
     key_init(KEY_C);     //PTB22
     tsl1401ccd_init();   //ccd的初始化
     ftm_quad_init(FTM1); //512路编码器初始化
-    motion(velocity,velocity);
+    motion(velocity,0);
     control(direction);
     
 /*
@@ -75,15 +75,16 @@ void main(void)
     led(LED2,LED_ON);     DELAY_MS(200);
     led(LED3,LED_ON);     DELAY_MS(200);
     led(LED0,LED_OFF);  led(LED1,LED_OFF);  led(LED2,LED_OFF);  led(LED3,LED_OFF);
-
-    
-//    pit_init_ms(PIT1,5);
-//    set_vector_handler(PIT1_VECTORn,IRQ_CCD_cal);
-//    enable_irq(PIT1_IRQn);
+   
+    pit_init_ms(PIT1,50);
+    set_vector_handler(PIT1_VECTORn,PIT_VAL);
+    enable_irq(PIT1_IRQn);
+;
 /*
 *  以下是主要程序循环部分
 *   
 */  
+/*
     while (1)
     {
       if(key_check(KEY_A) == KEY_DOWN)
@@ -100,8 +101,8 @@ void main(void)
         break;
       }
     }
-    
-    while(state)
+*/    
+    while(1)
     {
       if (key_check(KEY_B) == KEY_DOWN)
       {
@@ -114,47 +115,52 @@ void main(void)
       
       a=ccd_cal();
       direction=a/60+5;
+      //direction = 5+2;
      // int(direction);
       //direction = direction/10+2.1;
       //printf("direction %f\n",direction);
       
-      val = ftm_quad_get(FTM1);          //获取FTM 正交解码 的脉冲数(负数表示反方向)
-      ftm_quad_clean(FTM1);              //清零
-      printf("%d     ",val);
+
+      //printf("%d     ",val);
       
       
-      if (val<400)
+      if (val<250)
         velocity = velocity + 2;
       else
         velocity = velocity - 2;
       
       
-
-      if (val<0)
+      if (velocity>=20)
+        velocity = 20;
+      if (velocity<0)
         velocity = 0;
     
       printf("%d\n",velocity);
-      motion(velocity,velocity);  //40 2160  30  1580
+      motion(velocity,0);  //40 2160  30  1580
       control(direction);    //舵机的控制范围0-6-12 对应 左-中-右
       //DELAY_MS(0);
       led_turn(LED0);
-
    
     }
    
     
 }
 
-
-
+void PIT_VAL()
+{
+  
+   val = ftm_quad_get(FTM1);          //获取FTM 正交解码 的脉冲数(负数表示反方向)
+   ftm_quad_clean(FTM1);              //清零
+   PIT_Flag_Clear(PIT1);
+   
+}
 
 /*
 *   线性ccd初始化
 */
 void  tsl1401ccd_init(void)
 {
-
-    uint8 time = 100;
+    uint8 time = CCD_EXPOSURE;
 
     //初始化 线性CCD
     tsl1401_set_addrs(TSL1401_MAX,(uint8 *)& CCD_BUFF[0],(uint8 *)&CCD_BUFF[1],(uint8 *)&CCD_BUFF[2]);
@@ -167,32 +173,37 @@ void  tsl1401ccd_init(void)
     enable_irq(PIT0_IRQn);
 }
 
+
+
+
 int ccd_cal()
 {
       int temp_d=0;
-      //uint8  max[TSL1401_SIZE];     //ccd数据处理
-      //uint8  avg[TSL1401_SIZE];     //ccd数据处理
+      uint8  max[TSL1401_SIZE];     //ccd数据处理
+      uint8  avg[TSL1401_SIZE];     //ccd数据处理
       tsl1401_get_img();         //采集 线性CCD 图像
 
 
         //限制最大值
         maxvar((uint8 *)&CCD_BUFF[0],TSL1401_SIZE,BIN_MAX);
         maxvar((uint8 *)&CCD_BUFF[1],TSL1401_SIZE,BIN_MAX);
-        maxvar((uint8 *)&CCD_BUFF[2],TSL1401_SIZE,BIN_MAX);
-        
+        //maxvar((uint8 *)&CCD_BUFF[2],TSL1401_SIZE,BIN_MAX);
+
+      filter_xk((uint8 *)CCD_BUFF[0], TSL1401_SIZE);
+      filter_xk((uint8 *)CCD_BUFF[1], TSL1401_SIZE);
+                
+        //求波形差分
+        abs_diff((uint8 *)&CCD_BUFF[TSL1401_MAX+0],(uint8 *)&CCD_BUFF[0],TSL1401_SIZE,&max[0],&avg[0]);
+        abs_diff((uint8 *)&CCD_BUFF[TSL1401_MAX+1],(uint8 *)&CCD_BUFF[1],TSL1401_SIZE,&max[1],&avg[1]);
+        abs_diff((uint8 *)&CCD_BUFF[TSL1401_MAX+2],(uint8 *)&CCD_BUFF[2],TSL1401_SIZE,&max[2],&avg[2]);
+
         //二值化处理
         bin_xk((uint8 *)&CCD_BUFF[0],TSL1401_SIZE);
         bin_xk((uint8 *)&CCD_BUFF[1],TSL1401_SIZE);
-        bin_xk((uint8 *)&CCD_BUFF[2],TSL1401_SIZE);
+        //bin_xk((uint8 *)&CCD_BUFF[2],TSL1401_SIZE);
 
         temp_d = tiaojie(CCD_BUFF);
         //printf("cal %d     ",temp_d);
-        
-        //求波形差分
-        //abs_diff((uint8 *)&CCD_BUFF[TSL1401_MAX+0],(uint8 *)&CCD_BUFF[0],TSL1401_SIZE,&max[0],&avg[0]);
-        //abs_diff((uint8 *)&CCD_BUFF[TSL1401_MAX+1],(uint8 *)&CCD_BUFF[1],TSL1401_SIZE,&max[1],&avg[1]);
-        //abs_diff((uint8 *)&CCD_BUFF[TSL1401_MAX+2],(uint8 *)&CCD_BUFF[2],TSL1401_SIZE,&max[2],&avg[2]);
-
 
         //根据差分波形二值化图像
         //bin((uint8 *)&CCD_BUFF[2*TSL1401_MAX+0],(uint8 *)&CCD_BUFF[0],(uint8 *)&CCD_BUFF[TSL1401_MAX+0],TSL1401_SIZE,max[0]);
@@ -200,9 +211,11 @@ int ccd_cal()
         //bin((uint8 *)&CCD_BUFF[2*TSL1401_MAX+2],(uint8 *)&CCD_BUFF[2],(uint8 *)&CCD_BUFF[TSL1401_MAX+2],TSL1401_SIZE,max[2]);
         
         
-        //vcan_sendccd((uint8 *)&CCD_BUFF[0],2*TSL1401_SIZE);
+        vcan_sendccd((uint8 *)&CCD_BUFF[0],2*TSL1401_SIZE);
         return temp_d;
 }
+
+
 
 /*!
  *  @brief      PIT0中断服务函数
@@ -235,7 +248,8 @@ void maxvar(uint8 *buf,uint16 len,uint8  maxval)
 */
  void bin_xk(uint8 *buf, uint16 len)
  {
-   uint8 threshold = 100;
+   //uint8 threshold = max-max_d-22;  //经验数据
+   uint8 threshold = 200-max_d;
 /*   
    int8 bigger [TSL1401_SIZE]={0};
    int8 smaller[TSL1401_SIZE]={0};
@@ -280,10 +294,7 @@ void maxvar(uint8 *buf,uint16 len,uint8  maxval)
    }
    else
      judge=1; */  
-   
- 
- 
-   
+     
     while(len--)
    {
      if(buf[len]>=threshold)
@@ -311,17 +322,21 @@ void maxvar(uint8 *buf,uint16 len,uint8  maxval)
 
 void abs_diff(uint8 *dst,uint8 *src,uint16 len,uint8 * maxval,uint8 * avgval)
 {
-    int8 tmp;
-    uint8 max = 0;
+    int8 tmp,tmp1;
+    //uint8 max_d = 0;   //该变量设置为全局变量定义在最前端
     uint32 sum = 0;
     uint16 lentmp = len;
     while(--lentmp)                 //仅循环 len-1 次
     {
-        tmp = *(src+1)- *src;
-        tmp = ABS(tmp) ;
-        if(tmp > max )
+        tmp1 = *(src+1)- *src;
+        tmp = ABS(tmp1) ;
+        if(tmp > max_d )
         {
-             max = tmp;
+             max_d = tmp;
+             if(tmp1 >= 0)
+               max = *(src+1);
+             else
+               max = *src;
         }
 
         sum += tmp;
@@ -330,8 +345,10 @@ void abs_diff(uint8 *dst,uint8 *src,uint16 len,uint8 * maxval,uint8 * avgval)
         dst++;
     }
     *dst = 0;               // 最后一个 点配置为 0
-    *maxval = max;           // 返回最大绝对差值
+    *maxval = max_d;           // 返回最大绝对差值
     *avgval = (uint8)(sum/(len-1));  //前 len -1 个数的平均值
+
+    printf("max%d     max_d%d\n",max,max_d);
 }
 
 /*!
@@ -439,150 +456,41 @@ void bin(uint8 *bin,uint8 * img,uint8 * difimg,uint16 len,uint8 maxdif)
     }
 }
 
-int zhidaowengding(uint8 a[TSL1401_MAX * 3][TSL1401_SIZE])
-{
-	int i = 0 ;
-	int r=0,p = 0;
-	int l=0;
-	int out = 0;
-	while (i < 126)
-	{
-		if (a[1][i] < a[1][i+1])
-		{
-			if (p == 0)
-			{
-				r = i;
-				p = 1;
-			}
-			l = i;
-		}
-		i = i + 1;
-	}
-	l = 128 - l;
-	out = l - r;
-        //printf("zhidao:%d     ",out);
-	return out;//返回值，左边空余大小减去右边空余大小，正值往左转，负值往右转
-}
-
-int jisuanLdechangdu(uint8 a[TSL1401_MAX * 3][TSL1401_SIZE])
-{
-	int i = 0, p = 0;
-	int r=0;
-	int l=0;
-	int out=0;
-	int L = 0;
-	while (i < 126)
-	{
-		if (a[1][i] < a[1][i + 1])
-		{
-			if (p == 0)
-			{
-				r = i;
-				p = 1;
-			}
-			l = i;
-		}
-		i = i + 1;
-	}
-	L = l - r;
-        //printf("changdu%d     ",L);
-	return L;
-}
-
-int panduanshifouyouwandao(uint8 a[TSL1401_MAX * 3][TSL1401_SIZE],int L0)
-{
-	int l=0;
-	l = jisuanLdechangdu(a);
-	if (l > (L0 - 5) && l < (L0 + 5))
-	{
-		return 1;//没有弯道
-	}
-        
-	return 0;//有弯道
-}
-
-int shifouyouliangtiaoxian(uint8 a[TSL1401_MAX * 3][TSL1401_SIZE])
-{
-	int ge = 0;
-	int i = 0;
-	int f = 0;
-	while (i < 126)
-	{
-		if (a[1][i] < a[1][i + 1])
-		{
-			ge = ge + 1;
-		}
-		i = i + 1;
-	}
-	if (ge == 2)
-	{
-		f = 1;
-		return f;//有两根线
-	}
-	f = 0;
-	return f;
-}
 
 
-//当延时函数结束之后，我们需要计算CCD中心距离线的距离，之后跟着一条
-
-int zhuanwan(uint8 a[TSL1401_MAX * 3][TSL1401_SIZE])
-{
-	int i = 0;
-	int p = 0;
-	int out = 0;
-	while (i < 126)
-	{
-		if (a[1][i] != a[1][i + 1])
-		{
-			p = i;
-		}
-	}
-	out = 63 - p;//由这个值计算偏转量，如果小于0则是向右，大于0则是向左。
-//printf("zhuanwan%d     ",out);
-	return out;
-}
-
-int tiaojie(uint8 a[TSL1401_MAX * 3][TSL1401_SIZE])
-{
-  int L1=105;
-	if (shifouyouliangtiaoxian(a) == 1)//检测到两条直线
-	{
-		if (panduanshifouyouwandao(a, L1) == 0)//检测到弯道
-		{
-			//判断直线条数
-			//计算CCD到中点距离
-			if (shifouyouliangtiaoxian(a) == 1)
-			{
-				return zhidaowengding(a);
-			}
-			return zhuanwan(a);
-		}
-		//直道保持
-		return zhidaowengding(a);
-	}
-	return zhidaowengding(a);
-}
-
-
+/*
 void IRQ_CCD_cal()
 {
-  PIT_Flag_Clear(PIT1);
-  
-  tsl1401_get_img();         //采集 线性CCD 图像
+   tsl1401_get_img();            //采集 线性CCD 图像
+   uint8  max[TSL1401_SIZE];     //ccd数据处理
+   uint8  avg[TSL1401_SIZE];     //ccd数据处理
 
 
-  //限制最大值
+
+   //限制最大值
    maxvar((uint8 *)&CCD_BUFF[0],TSL1401_SIZE,BIN_MAX);
    maxvar((uint8 *)&CCD_BUFF[1],TSL1401_SIZE,BIN_MAX);
-   maxvar((uint8 *)&CCD_BUFF[2],TSL1401_SIZE,BIN_MAX);
-        
-  //二值化处理
+  //maxvar((uint8 *)&CCD_BUFF[2],TSL1401_SIZE,BIN_MAX);
+                
+   //求波形差分
+   abs_diff((uint8 *)&CCD_BUFF[TSL1401_MAX+0],(uint8 *)&CCD_BUFF[0],TSL1401_SIZE,&max[0],&avg[0]);
+   abs_diff((uint8 *)&CCD_BUFF[TSL1401_MAX+1],(uint8 *)&CCD_BUFF[1],TSL1401_SIZE,&max[1],&avg[1]);
+   //abs_diff((uint8 *)&CCD_BUFF[TSL1401_MAX+2],(uint8 *)&CCD_BUFF[2],TSL1401_SIZE,&max[2],&avg[2]);
+
+   //二值化处理
    bin_xk((uint8 *)&CCD_BUFF[0],TSL1401_SIZE);
    bin_xk((uint8 *)&CCD_BUFF[1],TSL1401_SIZE);
-   bin_xk((uint8 *)&CCD_BUFF[2],TSL1401_SIZE);
+   //bin_xk((uint8 *)&CCD_BUFF[2],TSL1401_SIZE);
 
-   direction = tiaojie(CCD_BUFF);
-   //printf("%d\n",direction);
-  
-}
+   direction = tiaojie(CCD_BUFF)/60+5;
+   //printf("cal %d     ",temp_d);
+
+   //根据差分波形二值化图像
+   //bin((uint8 *)&CCD_BUFF[2*TSL1401_MAX+0],(uint8 *)&CCD_BUFF[0],(uint8 *)&CCD_BUFF[TSL1401_MAX+0],TSL1401_SIZE,max[0]);
+   //bin((uint8 *)&CCD_BUFF[2*TSL1401_MAX+1],(uint8 *)&CCD_BUFF[1],(uint8 *)&CCD_BUFF[TSL1401_MAX+1],TSL1401_SIZE,max[1]);
+   //bin((uint8 *)&CCD_BUFF[2*TSL1401_MAX+2],(uint8 *)&CCD_BUFF[2],(uint8 *)&CCD_BUFF[TSL1401_MAX+2],TSL1401_SIZE,max[2]);
+        
+        
+   vcan_sendccd((uint8 *)&CCD_BUFF[0],2*TSL1401_SIZE);
+   PIT_Flag_Clear(PIT1);
+}*/

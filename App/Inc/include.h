@@ -43,6 +43,7 @@
 #include  "XK_bianma.h"     //正交解码
 //#include  "XK_tsl1401ccd.h" //CCD程序
 #include  "VCAN_TSL1401.h"
+#include  "XK_cite.h"       //其他外部函数声明
 
 
 #include  "VCAN_LED.H"          //LED
