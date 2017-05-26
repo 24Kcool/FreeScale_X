@@ -1,0 +1,15 @@
+"E:\Others\IAR\arm\bin\armproc.dll" 
+
+"E:\Others\IAR\arm\bin\armjlink2.dll" 
+
+"E:\05NXP\FreeScale_X\Prj\IAR\Debug\Exe\freescale.out" 
+
+--plugin "E:\Others\IAR\arm\bin\armbat.dll" 
+
+--device_macro "E:\Others\IAR\arm\config\debugger\NXP\Kxx.dmac" 
+
+--device_macro "E:\Others\IAR\arm\config\debugger\NXP\Kxx_Trace.dmac" 
+
+
+
+
