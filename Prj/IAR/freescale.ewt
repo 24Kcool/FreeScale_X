@@ -2351,6 +2351,9 @@
         <group>
             <name>inc</name>
             <file>
+                <name>$PROJ_DIR$\..\..\Board\inc\Serial_oscilloscope.h</name>
+            </file>
+            <file>
                 <name>$PROJ_DIR$\..\..\Board\inc\VCAN_computer.h</name>
             </file>
             <file>
@@ -2372,6 +2375,9 @@
                 <name>$PROJ_DIR$\..\..\Board\inc\XK_s3010.h</name>
             </file>
         </group>
+        <file>
+            <name>$PROJ_DIR$\..\..\Board\src\Serial_oscilloscope.c</name>
+        </file>
         <file>
             <name>$PROJ_DIR$\..\..\Board\src\VCAN_computer.c</name>
         </file>

@@ -18,7 +18,7 @@
 #include "include.h"
 
 #define BIN_MAX 0xC8   //ccd使用
-#define CCD_EXPOSURE 60  //ccd曝光时间
+#define CCD_EXPOSURE 50  //ccd曝光时间
 
 uint8 CCD_BUFF[TSL1401_MAX*3][TSL1401_SIZE];  //定义ccd采集数据的数组
 float direction=5;   //小车方向控制量  初始量定义5归中
@@ -39,6 +39,8 @@ void maxvar(uint8 *buf,uint16 len,uint8  maxval);
 void bin_xk(uint8 *buf, uint16 len);
 void tsl1401ccd_init();
 int ccd_cal();
+void qiudao(uint8 *src, uint16 len);
+void filter_p(uint8 *src, uint16 len);
 
 
 
@@ -108,22 +110,25 @@ void main(void)
       {
         velocity++;
       }
+      else if (key_check(KEY_C) == KEY_DOWN) 
+      {
+        velocity--;
+      }
       else
       {
         velocity=velocity;
       }
-      
       a=ccd_cal();
       direction=a/60+5;
-      //direction = 5+2;
+      //direction = 5;
      // int(direction);
       //direction = direction/10+2.1;
       //printf("direction %f\n",direction);
       
-
+      printf("direction%f      \n",direction);
       //printf("%d     ",val);
       
-      
+      /*
       if (val<250)
         velocity = velocity + 2;
       else
@@ -134,8 +139,9 @@ void main(void)
         velocity = 20;
       if (velocity<0)
         velocity = 0;
-    
-      printf("%d\n",velocity);
+    */
+      
+     // printf("%d\n",velocity);
       motion(velocity,0);  //40 2160  30  1580
       control(direction);    //舵机的控制范围0-6-12 对应 左-中-右
       //DELAY_MS(0);
@@ -179,10 +185,9 @@ void  tsl1401ccd_init(void)
 int ccd_cal()
 {
       int temp_d=0;
-      uint8  max[TSL1401_SIZE];     //ccd数据处理
-      uint8  avg[TSL1401_SIZE];     //ccd数据处理
+      //uint8  max[TSL1401_SIZE];     //ccd数据处理
+      //uint8  avg[TSL1401_SIZE];     //ccd数据处理
       tsl1401_get_img();         //采集 线性CCD 图像
-
 
         //限制最大值
         maxvar((uint8 *)&CCD_BUFF[0],TSL1401_SIZE,BIN_MAX);
@@ -191,18 +196,26 @@ int ccd_cal()
 
       filter_xk((uint8 *)CCD_BUFF[0], TSL1401_SIZE);
       filter_xk((uint8 *)CCD_BUFF[1], TSL1401_SIZE);
-                
+      
+      //qiudao((uint8 *)CCD_BUFF[0], TSL1401_SIZE);
+      //qiudao((uint8 *)CCD_BUFF[1], TSL1401_SIZE);
+
+      filter_p((uint8 *)CCD_BUFF[0], TSL1401_SIZE);
+      filter_p((uint8 *)CCD_BUFF[1], TSL1401_SIZE);
+      
+      
+     
         //求波形差分
-        abs_diff((uint8 *)&CCD_BUFF[TSL1401_MAX+0],(uint8 *)&CCD_BUFF[0],TSL1401_SIZE,&max[0],&avg[0]);
-        abs_diff((uint8 *)&CCD_BUFF[TSL1401_MAX+1],(uint8 *)&CCD_BUFF[1],TSL1401_SIZE,&max[1],&avg[1]);
-        abs_diff((uint8 *)&CCD_BUFF[TSL1401_MAX+2],(uint8 *)&CCD_BUFF[2],TSL1401_SIZE,&max[2],&avg[2]);
+        //abs_diff((uint8 *)&CCD_BUFF[TSL1401_MAX+0],(uint8 *)&CCD_BUFF[0],TSL1401_SIZE,&max[0],&avg[0]);
+        //abs_diff((uint8 *)&CCD_BUFF[TSL1401_MAX+1],(uint8 *)&CCD_BUFF[1],TSL1401_SIZE,&max[1],&avg[1]);
+        //abs_diff((uint8 *)&CCD_BUFF[TSL1401_MAX+2],(uint8 *)&CCD_BUFF[2],TSL1401_SIZE,&max[2],&avg[2]);
 
         //二值化处理
-        bin_xk((uint8 *)&CCD_BUFF[0],TSL1401_SIZE);
-        bin_xk((uint8 *)&CCD_BUFF[1],TSL1401_SIZE);
+        //bin_xk((uint8 *)&CCD_BUFF[0],TSL1401_SIZE);
+        //bin_xk((uint8 *)&CCD_BUFF[1],TSL1401_SIZE);
         //bin_xk((uint8 *)&CCD_BUFF[2],TSL1401_SIZE);
 
-        temp_d = tiaojie(CCD_BUFF);
+        temp_d = tiaojie(CCD_BUFF,70);
         //printf("cal %d     ",temp_d);
 
         //根据差分波形二值化图像
@@ -310,6 +323,129 @@ void maxvar(uint8 *buf,uint16 len,uint8  maxval)
 
  }
 
+void qiudao(uint8 *src, uint16 len)
+{
+  int i=0;
+  for(i=0;i<len-1;i++)
+  {
+    src[i] = src[i+1]-src[i];
+  }
+  src[127] = src[126]; 
+}
+
+
+void filter_p(uint8 *src, uint16 len)
+{
+  int i=0;
+  int edge1=0,edge2=0,edge3=0,edge4=0;
+  int num=0,num1=0;
+  uint8 ma[128]={0};
+  
+  for(i=0;i<128;i++)
+  {
+    
+    if(i==127)
+      {
+      num1 = num;
+      num = 0;
+	if(num1>15)
+        { edge1 = i + 1 - num1;
+        edge2 = 127;
+        }
+        else
+        {
+          edge1 = i + 1 - num1;
+        edge2 = edge1+1;
+        }
+      }
+    else
+    {
+    if( (src[i+1] - src[i] )== 0 && (src[i]>=190) )
+    {
+      num++;     
+    }
+    
+    else
+    {
+      num1=num;
+      num = 0;
+      if(num1 > 15)
+      {
+        edge2 = i;
+        edge1 = i+1-num1;
+        i=127;
+      }
+    }
+    }
+  }
+
+ /*  for(i=127;i>=0;i--)
+  {
+    if( (src[i-1] - src[i] )== 0 && (src[i]>=190) )
+    {
+      num++;     
+    }
+    else if(i==0)
+    {
+      num1 = num;
+      num = 0;
+	if(num1>15)
+        { edge4 = i -1 + num1;
+        edge3 = 0;
+        }
+        else
+        {
+          edge4 = i - 1 + num1;
+        edge3 = edge4-1;
+        }
+      
+    }
+    else
+    {
+      num1=num;
+      num = 0;
+      if(num1 > 15)
+      {
+        edge3 = i;
+        edge4 = i-1+num1;
+        i=0;
+      }
+    }
+  }
+  */
+  
+  for(i=0;i<128;i++)//左遍历
+  {
+    if(i>=0&&i<=edge1)
+      src[i]=0;
+    else if(i>edge1 && i<edge2)
+      src[i]=200;
+    else if(i>=edge2)
+      src[i]=0;
+  }
+ /* a=0;
+  for(i=0;i<127;i++)
+  {
+    if(src[i] <= 50)
+      a++;
+  }
+  if(a>=120)
+  {
+  for(i=0;i<127;i++)//右遍历
+  {
+    if(i>=0&&i<=edge3)
+      ma[i]=0;
+    else if(i>edge3 && i<edge4)
+      ma[i]=200;
+    else if(i>=edge4)
+      ma[i]=0;
+  }
+  src = ma;
+  }
+  */
+  
+}
+
 
 /*!
  *  @brief      计算差分绝对值
@@ -348,7 +484,7 @@ void abs_diff(uint8 *dst,uint8 *src,uint16 len,uint8 * maxval,uint8 * avgval)
     *maxval = max_d;           // 返回最大绝对差值
     *avgval = (uint8)(sum/(len-1));  //前 len -1 个数的平均值
 
-    printf("max%d     max_d%d\n",max,max_d);
+    //printf("max%d     max_d%d\n",max,max_d);
 }
 
 /*!
@@ -455,6 +591,7 @@ void bin(uint8 *bin,uint8 * img,uint8 * difimg,uint16 len,uint8 maxdif)
         }
     }
 }
+
 
 
 

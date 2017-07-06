@@ -30,6 +30,7 @@
 //#include  "VCAN_LCD.h"          //液晶总头文件
 //#include  "ff.h"                //FatFs
 #include  "VCAN_TSL1401.h"      //线性CCD
+             //摄像头
 //#include  "VCAN_key_event.h"    //按键消息处理
 //#include  "VCAN_NRF24L0_MSG.h"  //无线模块消息处理
 
