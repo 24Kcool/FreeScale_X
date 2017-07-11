@@ -133,6 +133,29 @@
 #define CAN1_RX_PIN     PTE25       //PTE25、PTC16              全部都是 ALT2
 
 
+//摄像头使用的端口
+#define CAMERA_DMA_CH	DMA_CH4					//摄像头DMA传输使用的通道号
+#define PT_PCLK		PTA19					//摄像头像素中断使用的管脚号
+#define PT_VSYNC	PTC7					//摄像头场中断使用的管脚号
+#define PT_HRFF		PTC6					//摄像头行中断使用的管脚号
+#define PT_CAMERA_IRQ	PORTC_IRQn				//行场中断所在端口的中断源编号
+#define INPUT_PORT	PTD_B0_IN				//输入8位灰度值端口编号
+
+//SCCB 管脚配置
+#define SCCB_SCL        PTE1					//SCCB SCL管脚编号
+#define SCCB_SDA        PTE0					//SCCB SDA管脚编号
+
+//测距模块使用的端口
+#define PT_D0			PTE27					//接收中断的管脚编号
+#define PT_D1			PTE28
+#define PT_DIST_IRQ		PORTE_IRQn				//中断管脚所在的PORT组的中断源编号，随PT_DO改变
+#define PIT_COUNTER		PIT0	
+
+//定义PIT 20ms中断使用的端口
+#define PIT_20ms		PIT1					//20ms中断使用的PIT模块编号。
+#define PIT_IRQ			PIT1_IRQn
+
+
 #endif  //_PORT_CFG_H_
 
 

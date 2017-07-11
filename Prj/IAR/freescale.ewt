@@ -2351,6 +2351,18 @@
         <group>
             <name>inc</name>
             <file>
+                <name>$PROJ_DIR$\..\..\Board\inc\FIRE_SCCB.h</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\..\Board\inc\FS_ISR.h</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\..\Board\inc\FS_LUT.h</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\..\Board\inc\FS_OV7620.h</name>
+            </file>
+            <file>
                 <name>$PROJ_DIR$\..\..\Board\inc\Serial_oscilloscope.h</name>
             </file>
             <file>
@@ -2375,6 +2387,18 @@
                 <name>$PROJ_DIR$\..\..\Board\inc\XK_s3010.h</name>
             </file>
         </group>
+        <file>
+            <name>$PROJ_DIR$\..\..\Board\src\FIRE_SCCB.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\Board\src\FS_ISR.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\Board\src\FS_LUT.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\Board\src\FS_OV7620.c</name>
+        </file>
         <file>
             <name>$PROJ_DIR$\..\..\Board\src\Serial_oscilloscope.c</name>
         </file>

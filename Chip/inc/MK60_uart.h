@@ -64,6 +64,10 @@ extern void uart_txc_irq_dis(UARTn_e);                         //¹Ø´®¿Ú·¢ËÍÍê³ÉÖ
 
 extern void uart3_test_handler(void);                        //ÖĞ¶Ï·şÎñº¯Êı£¬½ö¹©²Î¿¼£¨ĞèÓÃ»§×ÔĞĞÊµÏÖ£©
 
+
+
+extern void uart_init_old (UARTn_e, uint32 baud, uint8 r_watermark, uint8 t_watermark);  //ÁíÒ»¸ö°æ±¾µÄ³õÊ¼»¯
+
 /********************************************************************/
 
 #endif /* __MK60_UART_H__ */

@@ -7,6 +7,8 @@
  * Include 用户自定义的头文件
  */
 #include  "MK60_wdog.h"
+#include  "MK60_dma.h"
+#include  "MK60_conf.h"
 #include  "MK60_gpio.h"     //IO口操作
 #include  "MK60_uart.h"     //串口
 #include  "MK60_SysTick.h"
@@ -19,7 +21,9 @@
 #include  "MK60_FLASH.h"    //FLASH
 #include  "MK60_can.h"      //CAN
 #include  "MK60_sdhc.h"     //SDHC
+#include  "MK60_it.h"
 //#include  "MK60_usb.h"      //usb
+
 
 #include  "VCAN_LED.H"          //LED
 //#include  "VCAN_KEY.H"          //KEY
@@ -30,7 +34,11 @@
 //#include  "VCAN_LCD.h"          //液晶总头文件
 //#include  "ff.h"                //FatFs
 #include  "VCAN_TSL1401.h"      //线性CCD
-             //摄像头
+#include  "FS_OV7620.h"             //摄像头
+#include  "FIRE_SCCB.h"
+#include  "FS_LUT.h"
+#include  "FS_ISR.h"
+#include  "FS_CCD.h"
 //#include  "VCAN_key_event.h"    //按键消息处理
 //#include  "VCAN_NRF24L0_MSG.h"  //无线模块消息处理
 

@@ -17,7 +17,7 @@
 
 #ifndef __MK60_IT_H__
 #define __MK60_IT_H__
-
+#include  "FS_ISR.h"
 /*                          重新定义中断向量表
  *  先取消默认的中断向量元素宏定义        #undef  VECTOR_xxx
  *  在重新定义到自己编写的中断函数      #define VECTOR_xxx    xxx_IRQHandler
@@ -26,7 +26,8 @@
  *       #define VECTOR_003    HardFault_Handler    重新定义硬件上访中断服务函数
  */
 
-
+#undef  VECTOR_105
+#define VECTOR_105      portc_irq_handler     // 0x0000_01A4 105   89     Port control module Pin Detect (Port C)
 
 
 

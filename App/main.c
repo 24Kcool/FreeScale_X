@@ -20,11 +20,65 @@
 #define BIN_MAX 0xC8   //ccd使用
 #define CCD_EXPOSURE 50  //ccd曝光时间
 
-uint8 CCD_BUFF[TSL1401_MAX*3][TSL1401_SIZE];  //定义ccd采集数据的数组
+//uint8 CCD_BUFF[TSL1401_MAX*3][TSL1401_SIZE];  //定义ccd采集数据的数组
 float direction=5;   //小车方向控制量  初始量定义5归中
 uint8 max_d=0;   //ccd每组数据最大差值
 uint8 max = 0;   //ccd中采集最大的数值
 int val=0;     //定义编码器采集数据
+
+void isr_priority_init();
+void clear_port_isr_flags();
+void main()
+{
+  char testCam = 1;
+  gpio_init(PTE26, GPO, 0);	//0点亮一个灯
+  gpio_init(PTD15, GPO, 1);	//0点亮一个灯
+  uart_init(UART4, 115200);	//已设置debug模式自动开启UART4作调试输出用
+  isr_priority_init();
+  if (testCam)
+    OV7620_Init();
+  while (1)
+  {
+    if (!testCam)
+      return;
+    while (IS_WAIT)
+			;
+    uart_putchar(UART4, 0xff);
+    for (int i = 0; i < IMG_ROW_ALL; ++i)
+      for (int j = 0; j < IMG_COL; ++j)
+      {
+        uint8 data = Image_Data[i][j] == 255 ? 254 : Image_Data[i][j];
+        uart_putchar(UART4, data);
+       }
+    sendfinished = 1;
+  }
+
+}
+
+void clear_port_isr_flags()
+{
+	PORTA_ISFR = 0xFFFFFFFF;
+	PORTB_ISFR = 0xFFFFFFFF;
+	PORTC_ISFR = 0xFFFFFFFF;
+	PORTD_ISFR = 0xFFFFFFFF;
+	PORTE_ISFR = 0xFFFFFFFF;
+}
+
+void isr_priority_init()
+{
+	NVIC_SetPriorityGrouping(0);	//用7位表示抢占优先级，1位表示子优先级。即有128个抢占优先级组，每一个组2个中断
+	NVIC_SetPriority(PT_CAMERA_IRQ, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), 0, 0));	//摄像头中断取组优先级0
+	//NVIC_SetPriority(PT_DIST_IRQ, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), 1, 0));		//测距中断取组优先级1
+	//NVIC_SetPriority(PIT_IRQ, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), 2, 0));		//PIT中断取组优先级2
+	//NVIC_SetPriority(UART_IRQ, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), 3, 0));
+}
+
+
+
+
+
+
+
 
 /*
 *  线性ccd处理部分函数声明
@@ -33,6 +87,8 @@ void PIT0_IRQHandler();
 //void IRQ_CCD_cal();  //ccd数据处理的中断函数
 void PIT_VAL();
 
+
+/*
 void bin(uint8 *bin,uint8 * img,uint8 * difimg,uint16 len,uint8 maxdif);
 void abs_diff(uint8 *dst,uint8 *src,uint16 len,uint8 * maxval,uint8 * avgval);
 void maxvar(uint8 *buf,uint16 len,uint8  maxval);
@@ -41,22 +97,22 @@ void tsl1401ccd_init();
 int ccd_cal();
 void qiudao(uint8 *src, uint16 len);
 void filter_p(uint8 *src, uint16 len);
+*/
 
 
-
-
+/*
 void main(void)
 {
-/*
-*   下部分是对于所有需要处理的数值的定义及初始化
-*/
+/
+// 下部分是对于所有需要处理的数值的定义及初始化
+/
     //int val=0;     //定义编码器采集数据
-    uint8 state=0;   //定义状态
+    //uint8 state=0;   //定义状态
     int velocity=0;//小车速度控制 
     int a=0;
-/*
-*  以下是对所有接口以及外设的初始化
-*/    
+
+ // 以下是对所有接口以及外设的初始化
+    
     led_init(LED0);      //PTD15
     led_init(LED1);      //PTA17
     led_init(LED2);      //PTC0
@@ -64,14 +120,14 @@ void main(void)
     key_init(KEY_A);     //PTB20
     key_init(KEY_B);     //PTB21
     key_init(KEY_C);     //PTB22
-    tsl1401ccd_init();   //ccd的初始化
+    //tsl1401ccd_init();   //ccd的初始化
     ftm_quad_init(FTM1); //512路编码器初始化
     motion(velocity,0);
     control(direction);
     
-/*
-*  以下是母板上电后的指示灯
-*/
+
+// 以下是母板上电后的指示灯
+
     led(LED0,LED_ON);     DELAY_MS(200);
     led(LED1,LED_ON);     DELAY_MS(200);
     led(LED2,LED_ON);     DELAY_MS(200);
@@ -82,11 +138,11 @@ void main(void)
     set_vector_handler(PIT1_VECTORn,PIT_VAL);
     enable_irq(PIT1_IRQn);
 ;
-/*
-*  以下是主要程序循环部分
-*   
-*/  
-/*
+
+//  以下是主要程序循环部分
+   
+  
+
     while (1)
     {
       if(key_check(KEY_A) == KEY_DOWN)
@@ -103,7 +159,7 @@ void main(void)
         break;
       }
     }
-*/    
+    
     while(1)
     {
       if (key_check(KEY_B) == KEY_DOWN)
@@ -118,7 +174,7 @@ void main(void)
       {
         velocity=velocity;
       }
-      a=ccd_cal();
+      //a=ccd_cal();
       direction=a/60+5;
       //direction = 5;
      // int(direction);
@@ -128,20 +184,9 @@ void main(void)
       printf("direction%f      \n",direction);
       //printf("%d     ",val);
       
-      /*
-      if (val<250)
-        velocity = velocity + 2;
-      else
-        velocity = velocity - 2;
+
       
-      
-      if (velocity>=20)
-        velocity = 20;
-      if (velocity<0)
-        velocity = 0;
-    */
-      
-     // printf("%d\n",velocity);
+
       motion(velocity,0);  //40 2160  30  1580
       control(direction);    //舵机的控制范围0-6-12 对应 左-中-右
       //DELAY_MS(0);
@@ -161,9 +206,15 @@ void PIT_VAL()
    
 }
 
+*/
+
+
+
+
 /*
 *   线性ccd初始化
 */
+/*
 void  tsl1401ccd_init(void)
 {
     uint8 time = CCD_EXPOSURE;
@@ -178,9 +229,6 @@ void  tsl1401ccd_init(void)
     set_vector_handler(PIT0_VECTORn,PIT0_IRQHandler);
     enable_irq(PIT0_IRQn);
 }
-
-
-
 
 int ccd_cal()
 {
@@ -227,7 +275,7 @@ int ccd_cal()
         vcan_sendccd((uint8 *)&CCD_BUFF[0],2*TSL1401_SIZE);
         return temp_d;
 }
-
+*/
 
 
 /*!
@@ -235,12 +283,14 @@ int ccd_cal()
  *  @since      v5.0
  *  @note       由于 TSL1401_INT_TIME 配置 为 PIT0 ，因而使用 PIT0
  */
+/*
 void PIT0_IRQHandler()
 {
     tsl1401_time_isr();
     PIT_Flag_Clear(PIT0);
 }
-
+*/
+/*
 void maxvar(uint8 *buf,uint16 len,uint8  maxval)
 {
     while(len--)
@@ -252,61 +302,19 @@ void maxvar(uint8 *buf,uint16 len,uint8  maxval)
     }
 
 }
-
+*/
 /*
 *  全局阈值处理
 *
 *
 *
 */
+
+/*
  void bin_xk(uint8 *buf, uint16 len)
  {
    //uint8 threshold = max-max_d-22;  //经验数据
    uint8 threshold = 200-max_d;
-/*   
-   int8 bigger [TSL1401_SIZE]={0};
-   int8 smaller[TSL1401_SIZE]={0};
-   uint8 i=0,k=0,sum1=0,avr1=0;
-   uint8 j=0,l=0,sum2=0,avr2=0;
-   //uint8 judge=1,z=0;
-   
-*/
-   
-  /*   
-   while(len--)
-   {
-     if(buf[len]>=threshold)
-     {
-       bigger[i]=len;
-       i++;
-     }
-     else
-     {
-       smaller[j]=len;
-       j++;
-     }
-   }
-   for(k=0;k<i;k++)
-   {
-     sum1+=buf[bigger[k]];
-   }
-   
-   for(l=0;l<j;l++)
-   {
-     sum2+=buf[smaller[l]];
-   }
-   
-   avr1=sum1/i;
-   avr2=sum2/j;
-   threshold=(avr1+avr2)/2;
-   
-   if(abs(threshold-threshold1)<10)
-   {
-     threshold=threshold1;
-     judge=0;
-   }
-   else
-     judge=1; */  
      
     while(len--)
    {
@@ -379,40 +387,7 @@ void filter_p(uint8 *src, uint16 len)
     }
   }
 
- /*  for(i=127;i>=0;i--)
-  {
-    if( (src[i-1] - src[i] )== 0 && (src[i]>=190) )
-    {
-      num++;     
-    }
-    else if(i==0)
-    {
-      num1 = num;
-      num = 0;
-	if(num1>15)
-        { edge4 = i -1 + num1;
-        edge3 = 0;
-        }
-        else
-        {
-          edge4 = i - 1 + num1;
-        edge3 = edge4-1;
-        }
-      
-    }
-    else
-    {
-      num1=num;
-      num = 0;
-      if(num1 > 15)
-      {
-        edge3 = i;
-        edge4 = i-1+num1;
-        i=0;
-      }
-    }
-  }
-  */
+
   
   for(i=0;i<128;i++)//左遍历
   {
@@ -423,29 +398,10 @@ void filter_p(uint8 *src, uint16 len)
     else if(i>=edge2)
       src[i]=0;
   }
- /* a=0;
-  for(i=0;i<127;i++)
-  {
-    if(src[i] <= 50)
-      a++;
-  }
-  if(a>=120)
-  {
-  for(i=0;i<127;i++)//右遍历
-  {
-    if(i>=0&&i<=edge3)
-      ma[i]=0;
-    else if(i>edge3 && i<edge4)
-      ma[i]=200;
-    else if(i>=edge4)
-      ma[i]=0;
-  }
-  src = ma;
-  }
-  */
+
   
 }
-
+*/
 
 /*!
  *  @brief      计算差分绝对值
@@ -455,7 +411,7 @@ void filter_p(uint8 *src, uint16 len)
                 都非常小，因此顶层用不上，建议删掉（此处保留是为了给大家验证）
  */
 
-
+/*
 void abs_diff(uint8 *dst,uint8 *src,uint16 len,uint8 * maxval,uint8 * avgval)
 {
     int8 tmp,tmp1;
@@ -486,13 +442,13 @@ void abs_diff(uint8 *dst,uint8 *src,uint16 len,uint8 * maxval,uint8 * avgval)
 
     //printf("max%d     max_d%d\n",max,max_d);
 }
-
+*/
 /*!
  *  @brief      简单的一个二值化 算法（不稳定,仅测试）
  *  @since      v5.0
  */
 
-
+/*
 // diff_threshold 差分阈值 ,不同的角度，不同的环境而有所不同
 //可根据 maxdif 最大差分值来配置，或者直接固定阈值
 #define diff_threshold    ((maxdif> 12) ? ((maxdif*80)/100) :10)     // 差分阈值
@@ -592,42 +548,5 @@ void bin(uint8 *bin,uint8 * img,uint8 * difimg,uint16 len,uint8 maxdif)
     }
 }
 
+*/
 
-
-
-/*
-void IRQ_CCD_cal()
-{
-   tsl1401_get_img();            //采集 线性CCD 图像
-   uint8  max[TSL1401_SIZE];     //ccd数据处理
-   uint8  avg[TSL1401_SIZE];     //ccd数据处理
-
-
-
-   //限制最大值
-   maxvar((uint8 *)&CCD_BUFF[0],TSL1401_SIZE,BIN_MAX);
-   maxvar((uint8 *)&CCD_BUFF[1],TSL1401_SIZE,BIN_MAX);
-  //maxvar((uint8 *)&CCD_BUFF[2],TSL1401_SIZE,BIN_MAX);
-                
-   //求波形差分
-   abs_diff((uint8 *)&CCD_BUFF[TSL1401_MAX+0],(uint8 *)&CCD_BUFF[0],TSL1401_SIZE,&max[0],&avg[0]);
-   abs_diff((uint8 *)&CCD_BUFF[TSL1401_MAX+1],(uint8 *)&CCD_BUFF[1],TSL1401_SIZE,&max[1],&avg[1]);
-   //abs_diff((uint8 *)&CCD_BUFF[TSL1401_MAX+2],(uint8 *)&CCD_BUFF[2],TSL1401_SIZE,&max[2],&avg[2]);
-
-   //二值化处理
-   bin_xk((uint8 *)&CCD_BUFF[0],TSL1401_SIZE);
-   bin_xk((uint8 *)&CCD_BUFF[1],TSL1401_SIZE);
-   //bin_xk((uint8 *)&CCD_BUFF[2],TSL1401_SIZE);
-
-   direction = tiaojie(CCD_BUFF)/60+5;
-   //printf("cal %d     ",temp_d);
-
-   //根据差分波形二值化图像
-   //bin((uint8 *)&CCD_BUFF[2*TSL1401_MAX+0],(uint8 *)&CCD_BUFF[0],(uint8 *)&CCD_BUFF[TSL1401_MAX+0],TSL1401_SIZE,max[0]);
-   //bin((uint8 *)&CCD_BUFF[2*TSL1401_MAX+1],(uint8 *)&CCD_BUFF[1],(uint8 *)&CCD_BUFF[TSL1401_MAX+1],TSL1401_SIZE,max[1]);
-   //bin((uint8 *)&CCD_BUFF[2*TSL1401_MAX+2],(uint8 *)&CCD_BUFF[2],(uint8 *)&CCD_BUFF[TSL1401_MAX+2],TSL1401_SIZE,max[2]);
-        
-        
-   vcan_sendccd((uint8 *)&CCD_BUFF[0],2*TSL1401_SIZE);
-   PIT_Flag_Clear(PIT1);
-}*/
