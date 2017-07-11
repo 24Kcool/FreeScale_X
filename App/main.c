@@ -19,66 +19,13 @@
 
 #define BIN_MAX 0xC8   //ccd使用
 #define CCD_EXPOSURE 50  //ccd曝光时间
+#define CAMERA_SIZE IMG_ROW_ALL*IMG_COL
 
 //uint8 CCD_BUFF[TSL1401_MAX*3][TSL1401_SIZE];  //定义ccd采集数据的数组
 float direction=5;   //小车方向控制量  初始量定义5归中
 uint8 max_d=0;   //ccd每组数据最大差值
 uint8 max = 0;   //ccd中采集最大的数值
 int val=0;     //定义编码器采集数据
-
-void isr_priority_init();
-void clear_port_isr_flags();
-void main()
-{
-  char testCam = 1;
-  gpio_init(PTE26, GPO, 0);	//0点亮一个灯
-  gpio_init(PTD15, GPO, 1);	//0点亮一个灯
-  uart_init(UART4, 115200);	//已设置debug模式自动开启UART4作调试输出用
-  isr_priority_init();
-  if (testCam)
-    OV7620_Init();
-  while (1)
-  {
-    if (!testCam)
-      return;
-    while (IS_WAIT)
-			;
-    uart_putchar(UART4, 0xff);
-    for (int i = 0; i < IMG_ROW_ALL; ++i)
-      for (int j = 0; j < IMG_COL; ++j)
-      {
-        uint8 data = Image_Data[i][j] == 255 ? 254 : Image_Data[i][j];
-        uart_putchar(UART4, data);
-       }
-    sendfinished = 1;
-  }
-
-}
-
-void clear_port_isr_flags()
-{
-	PORTA_ISFR = 0xFFFFFFFF;
-	PORTB_ISFR = 0xFFFFFFFF;
-	PORTC_ISFR = 0xFFFFFFFF;
-	PORTD_ISFR = 0xFFFFFFFF;
-	PORTE_ISFR = 0xFFFFFFFF;
-}
-
-void isr_priority_init()
-{
-	NVIC_SetPriorityGrouping(0);	//用7位表示抢占优先级，1位表示子优先级。即有128个抢占优先级组，每一个组2个中断
-	NVIC_SetPriority(PT_CAMERA_IRQ, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), 0, 0));	//摄像头中断取组优先级0
-	//NVIC_SetPriority(PT_DIST_IRQ, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), 1, 0));		//测距中断取组优先级1
-	//NVIC_SetPriority(PIT_IRQ, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), 2, 0));		//PIT中断取组优先级2
-	//NVIC_SetPriority(UART_IRQ, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), 3, 0));
-}
-
-
-
-
-
-
-
 
 /*
 *  线性ccd处理部分函数声明
@@ -99,39 +46,41 @@ void qiudao(uint8 *src, uint16 len);
 void filter_p(uint8 *src, uint16 len);
 */
 
+void isr_priority_init();
 
-/*
 void main(void)
 {
-/
+
 // 下部分是对于所有需要处理的数值的定义及初始化
-/
-    //int val=0;     //定义编码器采集数据
-    //uint8 state=0;   //定义状态
-    int velocity=0;//小车速度控制 
-    int a=0;
+  
+  //int val=0;     //定义编码器采集数据
+  //uint8 state=0;   //定义状态
+  int velocity=0;//小车速度控制 
+  int a=0;
 
  // 以下是对所有接口以及外设的初始化
     
-    led_init(LED0);      //PTD15
-    led_init(LED1);      //PTA17
-    led_init(LED2);      //PTC0
-    led_init(LED3);      //PTE26
-    key_init(KEY_A);     //PTB20
-    key_init(KEY_B);     //PTB21
-    key_init(KEY_C);     //PTB22
-    //tsl1401ccd_init();   //ccd的初始化
-    ftm_quad_init(FTM1); //512路编码器初始化
-    motion(velocity,0);
-    control(direction);
-    
+  led_init(LED0);      //PTD15
+  led_init(LED1);      //PTA17
+  led_init(LED2);      //PTC0
+  led_init(LED3);      //PTE26
+  key_init(KEY_A);     //PTB20
+  key_init(KEY_B);     //PTB21
+  key_init(KEY_C);     //PTB22
+  //tsl1401ccd_init();   //ccd的初始化
+  OV7620_Init();       //摄像头初始化
+  ftm_quad_init(FTM1); //512路编码器初始化
+  motion(velocity,0);
+  control(direction);
+  uart_init(UART4, 115200);	//已设置debug模式自动开启UART4作调试输出用
+  isr_priority_init();  
 
 // 以下是母板上电后的指示灯
 
-    led(LED0,LED_ON);     DELAY_MS(200);
-    led(LED1,LED_ON);     DELAY_MS(200);
-    led(LED2,LED_ON);     DELAY_MS(200);
-    led(LED3,LED_ON);     DELAY_MS(200);
+    led(LED0,LED_ON);     DELAY_MS(100);
+    led(LED1,LED_ON);     DELAY_MS(100);
+    led(LED2,LED_ON);     DELAY_MS(100);
+    led(LED3,LED_ON);     DELAY_MS(100);
     led(LED0,LED_OFF);  led(LED1,LED_OFF);  led(LED2,LED_OFF);  led(LED3,LED_OFF);
    
     pit_init_ms(PIT1,50);
@@ -142,7 +91,7 @@ void main(void)
 //  以下是主要程序循环部分
    
   
-
+/*
     while (1)
     {
       if(key_check(KEY_A) == KEY_DOWN)
@@ -159,42 +108,65 @@ void main(void)
         break;
       }
     }
-    
-    while(1)
+ */   
+  while(1)
+  {
+    if (key_check(KEY_B) == KEY_DOWN)
     {
-      if (key_check(KEY_B) == KEY_DOWN)
-      {
-        velocity++;
-      }
-      else if (key_check(KEY_C) == KEY_DOWN) 
-      {
-        velocity--;
-      }
-      else
-      {
-        velocity=velocity;
-      }
-      //a=ccd_cal();
-      direction=a/60+5;
-      //direction = 5;
-     // int(direction);
-      //direction = direction/10+2.1;
-      //printf("direction %f\n",direction);
-      
-      printf("direction%f      \n",direction);
-      //printf("%d     ",val);
-      
-
-      
-
-      motion(velocity,0);  //40 2160  30  1580
-      control(direction);    //舵机的控制范围0-6-12 对应 左-中-右
-      //DELAY_MS(0);
-      led_turn(LED0);
-   
+      velocity++;
     }
-   
+    else if (key_check(KEY_C) == KEY_DOWN) 
+    {
+      velocity--;
+    }
+    else
+    {
+      velocity=velocity;
+    }
     
+    if(velocity>100)
+      velocity = 20;
+    else if (velocity<0)
+      velocity = 0;
+    
+    
+  //a=ccd_cal();
+  direction=a/60+5;
+  //direction = 5;
+  // int(direction);
+  //direction = direction/10+2.1;      
+  //printf("direction%f      \n",direction);
+  //printf("%d\n",velocity);
+  motion(velocity,0);  //40 2160  30  1580
+  control(direction);    //舵机的控制范围0-6-12 对应 左-中-右
+  //DELAY_MS(0);
+  vcan_sendimg(Image_Data,CAMERA_SIZE);
+  sendfinished = 1;
+  
+  
+  /*// ttl串口调试备用
+  uart_putchar(UART4, 0xff);
+  for (int i = 0; i < IMG_ROW_ALL; ++i)
+    for (int j = 0; j < IMG_COL; ++j)
+    {
+      uint8 data = Image_Data[i][j] == 255 ? 254 : Image_Data[i][j];
+      uart_putchar(UART4, data);
+    }*/
+  
+  led_turn(LED0); //运行速率灯  
+  }
+   
+
+  
+  
+  /*// ttl串口调试备用
+  uart_putchar(UART4, 0xff);
+  for (int i = 0; i < IMG_ROW_ALL; ++i)
+    for (int j = 0; j < IMG_COL; ++j)
+    {
+      uint8 data = Image_Data[i][j] == 255 ? 254 : Image_Data[i][j];
+      uart_putchar(UART4, data);
+    }*/
 }
 
 void PIT_VAL()
@@ -206,7 +178,7 @@ void PIT_VAL()
    
 }
 
-*/
+
 
 
 
@@ -550,3 +522,20 @@ void bin(uint8 *bin,uint8 * img,uint8 * difimg,uint16 len,uint8 maxdif)
 
 */
 
+void clear_port_isr_flags()
+{
+	PORTA_ISFR = 0xFFFFFFFF;
+	PORTB_ISFR = 0xFFFFFFFF;
+	PORTC_ISFR = 0xFFFFFFFF;
+	PORTD_ISFR = 0xFFFFFFFF;
+	PORTE_ISFR = 0xFFFFFFFF;
+}
+
+void isr_priority_init()
+{
+	NVIC_SetPriorityGrouping(0);	//用7位表示抢占优先级，1位表示子优先级。即有128个抢占优先级组，每一个组2个中断
+	NVIC_SetPriority(PT_CAMERA_IRQ, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), 0, 0));	//摄像头中断取组优先级0
+	//NVIC_SetPriority(PT_DIST_IRQ, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), 1, 0));		//测距中断取组优先级1
+	//NVIC_SetPriority(PIT_IRQ, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), 2, 0));		//PIT中断取组优先级2
+	//NVIC_SetPriority(UART_IRQ, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), 3, 0));
+}

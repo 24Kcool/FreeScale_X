@@ -12,14 +12,14 @@ void OV7620_Init()
 	DELAY_MS(500);
 	SCCB_GPIO_init();
 	int test = 0;
-	test += sccb_regWrite(0x42, 0x11, 0x01);   //device---设备号  读写有区别  address---写数据的寄存器  data---写的内容
+	test += sccb_regWrite(0x42, 0x11, 0x01);   // 分频的问题一定注意   device---设备号  读写有区别  address---写数据的寄存器  data---写的内容
 	test += sccb_regWrite(0x42, 0x13, 0x01);
 	test += sccb_regWrite(0x42, 0x14, 0x24);
 	test += sccb_regWrite(0x42, 0x16, 0x03);
 	test += sccb_regWrite(0x42, 0x2D, 0xD5);
 	test += sccb_regWrite(0x42, 0x28, 0x00);
 	test += sccb_regWrite(0x42, 0x70, 0x01);
-	gpio_set(PTC0, 0);
+	gpio_set(PTC0, 0);   //摄像头初始化完成
 
 	//DMA通道0初始化，PTA27触发源(默认上升沿)，源地址为PTB_B0_IN，目的地址为：Pixel_Data，每次传输1Byte
 	dma_portx2buff_init(CAMERA_DMA_CH, (void *)&INPUT_PORT, (void *)Pixel_Data, PT_PCLK, DMA_BYTE1, IMG_COL_ALL, DADDR_KEEPON);
