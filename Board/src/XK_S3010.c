@@ -23,23 +23,23 @@ void control(float angle)
     ftm_pwm_init(S3010_FTM, S3010_CH,S3010_HZ,100);         // FTM0_PRECISON 配置 为 100 ，即占空比 为 100%
                                                            // port_cfg.h 里 配置 FTM2_CH1 对应为 PTB19
    
-    float intern = 9 + angle;
+    float intern = 9+angle;
     ftm_pwm_duty(S3010_FTM, S3010_CH,intern);  
-   
-/*    float i;
+   /*
+    float i;
     while(1)
     {
         
-        for(i = 14;i<16;i=i+0.5)
+        for(i = 6.5;i<7.7;i=i+0.2)
         {
             ftm_pwm_duty(S3010_FTM, S3010_CH,i);
-            DELAY_MS(500);
+            DELAY_MS(100);
         }
         
-        for(;i>13;i=i-0.5)
+        for(;i>6.5;i=i-0.2)
         {
             ftm_pwm_duty(S3010_FTM, S3010_CH,i);
-            DELAY_MS(500);
+            DELAY_MS(100);
         }
   
     }

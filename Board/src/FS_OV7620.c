@@ -32,25 +32,12 @@ void OV7620_Init()
 	port_init(PT_VSYNC, ALT1 | IRQ_FALLING | PULLUP);     //场中断，上拉，上升沿触发中断
 	
 	flags = 0x00;
-        //set_vector_handler(PT_CAMERA_IRQ,portc_irq_handler);
 	enable_irq(PT_CAMERA_IRQ);
 	//DELAY_MS(50);
 	flags = 0x06;                    //初始化数值绝对不能更改,为了保证当且仅当获取一张新图片时才开始处理图片
-										 //将车从其它模式改回运行模式时都要先清除中断标志位然后对这个变量重新赋值成0x06
+					 //将车从其它模式改回运行模式时都要先清除中断标志位然后对这个变量重新赋值成0x06
 }
-void Send_Img()
-{
-	int ind_i, ind_j;
-	uart_putchar(VCAN_PORT, 0xFF);
-	for (ind_i = 0; ind_i < IMG_ROW;++ind_i)
-		for (ind_j = 0; ind_j < IMG_COL;++ind_j)
-		{
-			if (0xFF == LUT(Image_Data, ind_i, ind_j))
-				uart_putchar(VCAN_PORT, 0xFE);
-			else
-				uart_putchar(VCAN_PORT, LUT(Image_Data, ind_i, ind_j));
-		}
-}
+
 
 void HRFF_handler()
 {
@@ -89,4 +76,18 @@ void VSYNC_handler()
 	flags ^= 0x80;
 	CLEAR_WAIT;
 	sendfinished = 0;
+}
+
+void portc_irq_handler()
+{
+	if ((PORTC_ISFR & (1 << 7)))
+	{
+		PORTC_ISFR |= (1 << 7);
+		VSYNC_handler();
+	}	
+	if ((PORTC_ISFR & (1 << 6)))
+	{
+		PORTC_ISFR |= (1 << 6);
+		HRFF_handler();
+	}
 }

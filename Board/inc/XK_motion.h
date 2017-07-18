@@ -11,6 +11,6 @@
 #ifndef _XK_MOTION_H_
 #define _XK_MOTION_H_
 
-extern void motion(uint8 left, uint8 right);
+extern void motion(float left, float right);
 
 #endif  //__XK_MOTION_H__

@@ -138,7 +138,7 @@
 #define PT_PCLK		PTA19					//摄像头像素中断使用的管脚号
 #define PT_VSYNC	PTC7					//摄像头场中断使用的管脚号
 #define PT_HRFF		PTC6					//摄像头行中断使用的管脚号
-#define PT_CAMERA_IRQ	PORTC_IRQn				//行场中断所在端口的中断源编号
+#define PT_CAMERA_IRQ	PORTC_IRQn	  //PIT0_IRQn			//行场中断所在端口的中断源编号
 #define INPUT_PORT	PTD_B0_IN				//输入8位灰度值端口编号
 
 //SCCB 管脚配置

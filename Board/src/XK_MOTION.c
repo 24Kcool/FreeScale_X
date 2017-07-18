@@ -25,7 +25,7 @@
 #define MOTION_HZ   (1000)
 
 
-void motion(uint8 left, uint8 right)
+void motion(float left, float right)
 {
     //uint8 i = 0;
     ftm_pwm_init(LIFT_FTM,  LIFT_CH,  MOTION_HZ, 100);           // FTM0_PRECISON 配置 为 100 ，即占空比 为 100%

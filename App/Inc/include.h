@@ -16,7 +16,6 @@
 #include  "MK60_i2c.h"      //I2C
 #include  "MK60_ftm.h"      //PWM
 #include  "MK60_spi.h"      //SPI
-#include  "MK60_lptmr.h"    //低功耗定时器(延时)
 #include  "MK60_pit.h"      //PIT
 #include  "MK60_FLASH.h"    //FLASH
 #include  "MK60_can.h"      //CAN
@@ -33,12 +32,10 @@
 //#include  "VCAN_camera.h"       //摄像头总头文件
 //#include  "VCAN_LCD.h"          //液晶总头文件
 //#include  "ff.h"                //FatFs
-#include  "VCAN_TSL1401.h"      //线性CCD
+//#include  "VCAN_TSL1401.h"      //线性CCD
 #include  "FS_OV7620.h"             //摄像头
 #include  "FIRE_SCCB.h"
 #include  "FS_LUT.h"
-#include  "FS_ISR.h"
-#include  "FS_CCD.h"
 //#include  "VCAN_key_event.h"    //按键消息处理
 //#include  "VCAN_NRF24L0_MSG.h"  //无线模块消息处理
 
@@ -50,9 +47,10 @@
 #include  "XK_s3010.h"      //舵机控制
 #include  "XK_motion.h"     //电机控制
 #include  "XK_bianma.h"     //正交解码
+#include  "MXH_image.h"
 //#include  "XK_tsl1401ccd.h" //CCD程序
-#include  "VCAN_TSL1401.h"
-#include  "XK_cite.h"       //其他外部函数声明
+//#include  "VCAN_TSL1401.h"
+//#include  "XK_cite.h"       //其他外部函数声明
 
 
 #include  "VCAN_LED.H"          //LED

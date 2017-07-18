@@ -2327,10 +2327,10 @@
                 <name>$PROJ_DIR$\..\..\App\Inc\MK60_it.h</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\..\..\App\Inc\PORT_cfg.h</name>
+                <name>$PROJ_DIR$\..\..\App\Inc\MXH_image.h</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\..\..\App\Inc\XK_cite.h</name>
+                <name>$PROJ_DIR$\..\..\App\Inc\PORT_cfg.h</name>
             </file>
         </group>
         <file>
@@ -2343,7 +2343,7 @@
             <name>$PROJ_DIR$\..\..\App\MK60_it.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\..\App\XK_CITE.c</name>
+            <name>$PROJ_DIR$\..\..\App\MXH_IMAGE.c</name>
         </file>
     </group>
     <group>
@@ -2354,16 +2354,10 @@
                 <name>$PROJ_DIR$\..\..\Board\inc\FIRE_SCCB.h</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\..\..\Board\inc\FS_ISR.h</name>
-            </file>
-            <file>
                 <name>$PROJ_DIR$\..\..\Board\inc\FS_LUT.h</name>
             </file>
             <file>
                 <name>$PROJ_DIR$\..\..\Board\inc\FS_OV7620.h</name>
-            </file>
-            <file>
-                <name>$PROJ_DIR$\..\..\Board\inc\Serial_oscilloscope.h</name>
             </file>
             <file>
                 <name>$PROJ_DIR$\..\..\Board\inc\VCAN_computer.h</name>
@@ -2391,16 +2385,10 @@
             <name>$PROJ_DIR$\..\..\Board\src\FIRE_SCCB.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\..\Board\src\FS_ISR.c</name>
-        </file>
-        <file>
             <name>$PROJ_DIR$\..\..\Board\src\FS_LUT.c</name>
         </file>
         <file>
             <name>$PROJ_DIR$\..\..\Board\src\FS_OV7620.c</name>
-        </file>
-        <file>
-            <name>$PROJ_DIR$\..\..\Board\src\Serial_oscilloscope.c</name>
         </file>
         <file>
             <name>$PROJ_DIR$\..\..\Board\src\VCAN_computer.c</name>
